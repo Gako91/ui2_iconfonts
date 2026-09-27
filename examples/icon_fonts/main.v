@@ -27,21 +27,11 @@ pub mut:
 
 const icon_fonts_state = &IconFontsDemo{}
 
-// icon_names is the row of names drawn side by side. They are written the way
-// the Material Icons package writes them, which is how `tools/icond.v` read
-// them out of that package's list in the first place.
-const icon_names = ['home', 'search', 'settings', 'favorite', 'delete', 'add',
-	'edit', 'person', 'mail', 'star', 'shopping-cart', 'info', 'warning',
-	'cloud', 'lock', 'thumb-up']
-
-// icon_buttons pairs a name with the title a button carries beside it.
-const icon_buttons = {
-	'save':       'Save'
-	'delete':     'Delete'
-	'share':      'Share'
-	'print':      'Print'
-	'cloud-done': 'Upload'
-}
+// The names the window draws live in `icon_fonts.vml` and nowhere else. They are
+// written the way the Material Icons package writes them, which is how
+// `tools/icond.v` read them out of that package's list in the first place, and a
+// second copy of that list in here would be one more thing to keep in step with
+// the table.
 
 const icon_fonts_width = 760
 const icon_fonts_height = 520
