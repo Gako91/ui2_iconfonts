@@ -891,6 +891,14 @@ fn node_to_element_base(node &VNode, frame Rect) !Element {
 			return view(node.id, frame, v_box(node), v_children(node, local)!)
 		}
 		'Label' {
+			// An `icon` is a name looked up in a registered icon font, and it
+			// replaces the text: a label drawing one glyph is all an icon is.
+			// The text stays as what a screen reader reads aloud, because a
+			// private use code point says nothing to one.
+			icon := node.prop('icon')
+			if icon.len > 0 {
+				return v_icon_label(node, frame, icon)
+			}
 			return label(node.id, node.prop('text'), frame, v_text_style(node))
 		}
 		'Image' {
@@ -986,6 +994,17 @@ fn node_to_element_base(node &VNode, frame Rect) !Element {
 			)
 		}
 		'Button' {
+			// A button with an `icon` carries it as an image, which is the form
+			// the backends draw with the platform's own glyph beside the title.
+			icon := node.prop('icon')
+			if icon.len > 0 {
+				return Element{
+					...button_with_image(node.id, node.prop('text'),
+						icon_image_path(v_icon_alias(node), icon), frame, v_box(node),
+						v_text_style(node))
+					action_id: node.prop('on_tap')
+				}
+			}
 			return Element{
 				...button(node.id, node.prop('text'), frame, v_box(node), v_text_style(node))
 				action_id: node.prop('on_tap')
@@ -1863,6 +1882,30 @@ fn v_text_style(node &VNode) TextStyle {
 		hyphenation_factor: node.prop_or('hyphenation_factor', '0').f64()
 		lines:              node.prop_or('lines', '1').int()
 	}
+}
+
+// v_icon_alias is the registered font a node's `icon` is looked up in. The
+// bundled Material Icons face is registered under `material`, which is the alias
+// written when a node does not name one, so `icon: home` works with nothing to
+// register first.
+fn v_icon_alias(node &VNode) string {
+	return node.prop_or('icon_font', 'material')
+}
+
+// v_icon_label is a label drawing the glyph `icon` names. The declared font size
+// is raised by the same factor an icon elsewhere is raised by, because an icon
+// font is cut to fill the em square where a text font leaves the descender empty
+// and reads small at the size its neighbours are declared at.
+//
+// A node may still write a `text` beside its `icon`, and it is not used. A label
+// has one string in it, and the one an icon label needs is the glyph: filling it
+// with a name instead would draw the letters of that name in the icon font,
+// which carries no letters and would answer with boxes. A name for a screen
+// reader belongs in an accessibility field, and an element has none.
+fn v_icon_label(node &VNode, frame Rect, icon string) Element {
+	alias := v_icon_alias(node)
+	return icon_label(node.id, alias, icon, frame, icon_style(alias, icon,
+		v_text_style(node)))
 }
 
 fn v_color(node &VNode, key string, fallback u32) u32 {

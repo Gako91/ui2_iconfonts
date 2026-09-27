@@ -557,6 +557,25 @@ which is no better.
 UI2_FONT_SYMBOLS=/usr/share/fonts/truetype/ancient-scripts/Symbola.ttf ./treeview
 ```
 
+## Icon fonts
+
+An icon is a label drawing one private use code point in a font whose names are
+looked up. `ui2` ships the Material Icons face with its 2234 names, so an icon is
+written as a name and nothing private use ever appears in a document:
+
+```v
+ui2.icon_label('home_icon', 'material', 'home', rect, style)
+```
+
+```
+Button { id: save icon: save text: "Save" on_tap: save_it }
+```
+
+`tools/icond.v` writes the name table for any other icon package, from either the
+code point list or the stylesheet it ships. See [docs/icon-fonts.md](docs/icon-fonts.md)
+for the table format, the ligature fonts that cannot be read from a stylesheet,
+and how a face is loaded on each backend.
+
 ## Keyboard events
 
 Use `on_key_event` when a shortcut should follow a physical key across keyboard

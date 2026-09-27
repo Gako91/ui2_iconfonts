@@ -1,9 +1,18 @@
 V ?= v
 
-.PHONY: test ide check-ide examples examples-custom screenshot check-macos check-ios check-android check-linux check-windows check-custom-macos check-custom-windows check-custom check-backends
+.PHONY: test ide check-ide examples examples-custom screenshot check-macos check-ios check-android check-linux check-windows check-custom-macos check-custom-windows check-custom check-backends icons
 
 test:
 	$(V) test .
+
+# Rewrites the bundled Material Icons name table from the list the Material
+# Icons package ships, so a name that appears there is a name ui2 answers to.
+# The list lives outside this repository; see docs/icon-fonts.md.
+ICOND_LIST ?= MaterialIcons-Regular.codepoints
+
+icons:
+	$(V) run tools/icond.v -alias material -ttf assets/fonts/MaterialIcons-Regular.ttf \
+		-codepoints $(ICOND_LIST) -out ui/icons_material.v
 
 ide:
 	$(V) run ide

@@ -1067,3 +1067,60 @@ fn test_vml_popup_validates_header_height() {
 		assert err.msg().contains('exceed')
 	}
 }
+
+// An `icon` is a name looked up in an icon font, and a label drawing one glyph
+// is all an icon is, so `icon` replaces the text rather than sitting beside it.
+fn test_vml_label_with_an_icon_draws_the_glyph_it_names() {
+	el := element_from_vml('Label {
+		id: badge
+		icon: favorite
+		text: "Add to favourites"
+		x: 10 y: 10 width: 40 height: 40
+		color: #1D4ED8
+		font_size: 22
+	}', rect(0, 0, 300, 200)) or { panic(err) }
+	assert el.kind == .label
+	// The text is the glyph. The name a node writes beside its icon is not drawn
+	// in its place: the icon font has no letters, so the name would come out as
+	// one box per letter.
+	assert el.text == icon_name('material', 'favorite')
+	assert el.text_style.font_family == material_icon_path
+	assert el.text_style.color == u32(0x1d4ed8)
+}
+
+fn test_vml_label_naming_the_font_to_ask() {
+	el := element_from_vml('Label { id: a icon: home }',
+		rect(0, 0, 300, 200)) or { panic(err) }
+	// The bundled face is the default, so a name needs nothing else behind it.
+	assert el.text_style.font_family == material_icon_path
+	assert el.text == icon_name('material', 'home')
+}
+
+fn test_vml_label_with_an_icon_the_font_does_not_carry_keeps_its_own_font() {
+	// An unknown name is left as a label drawing nothing of the icon font: a
+	// private use code point with no outline draws as tofu, which is worse than
+	// drawing no icon at all.
+	el := element_from_vml('Label { id: a icon: no_such_icon_here }',
+		rect(0, 0, 300, 200)) or { panic(err) }
+	assert el.text_style.font_family.len == 0
+}
+
+fn test_vml_button_with_an_icon_carries_it_as_an_image() {
+	el := element_from_vml('Button {
+		id: save
+		icon: save
+		text: "Save"
+		on_tap: save_it
+		x: 10 y: 10 width: 120 height: 36
+	}', rect(0, 0, 300, 200)) or { panic(err) }
+	assert el.kind == .button
+	assert el.text == 'Save'
+	assert el.image_path == 'icon:material:save'
+	assert el.action_id == 'save_it'
+}
+
+fn test_vml_button_with_an_icon_asks_the_font_it_names() {
+	el := element_from_vml('Button { id: a icon: save icon_font: fa text: "Save" }',
+		rect(0, 0, 300, 200)) or { panic(err) }
+	assert el.image_path == 'icon:fa:save'
+}

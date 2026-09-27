@@ -2051,9 +2051,8 @@ fn page_focused_text_area(direction int) {
 			.image {
 				x := el.frame.x + off_x
 				y := el.frame.y + off_y
-				if el.image_path.trim_space().len > 0
-					&& !draw_cached_image(ctx, el.image_path, x, y, el.frame.width, el.frame.height,
-					el.rotation) {
+				if el.image_path.trim_space().len > 0 && !draw_element_image(ctx, el,
+					x, y, el.frame.width, el.frame.height, el.rotation) {
 					draw_rect(ctx, x, y, el.frame.width, el.frame.height, 0xe8ecef, 0)
 				}
 				if el.enabled && element_action_id(el).len > 0 && (el.clickable || el.draggable) {
@@ -2599,9 +2598,57 @@ fn page_focused_text_area(direction int) {
 			})
 			return
 		}
+		if draw_icon_glyph(ctx, image_path, x, y, width, height, style) {
+			return
+		}
 		if !draw_cached_image(ctx, image_path, x, y, width, height, 0) {
 			draw_outline(ctx, x, y, width, height, 0x94a3b8, 2)
 		}
+	}
+
+	// draw_icon_glyph draws an `icon:<alias>:<name>` as text in the font the
+	// alias stands for, and says whether it drew one. An icon font holds a glyph
+	// per name, which is a character to the text drawing it already does, so an
+	// icon needs no image of its own. The size follows the box the way a symbol
+	// does, so an icon and a symbol sit alike in the same button.
+	//
+	// A name the font does not carry draws nothing here and falls through to the
+	// file loader, which reports it: a code point with no outline would draw as
+	// tofu, and tofu is a worse answer than an honest error.
+	fn draw_icon_glyph(ctx &gg.Context, image_path string, x f64, y f64, width f64,
+		height f64, style TextStyle) bool {
+		if !image_path.starts_with('icon:') {
+			return false
+		}
+		ref := parse_icon_image_path(image_path) or { return false }
+		glyph := icon_name(ref.alias, ref.name)
+		icon := icon_style(ref.alias, ref.name, style)
+		if glyph.len == 0 || icon.font_family.len == 0 {
+			return false
+		}
+		draw_text_centered(ctx, glyph, x, y, width, height, TextStyle{
+			...icon
+			size: math.max(math.min(width, height) * 0.75, 8.0)
+		})
+		return true
+	}
+
+	// draw_element_image draws whatever an `image_path` names into a box, and
+	// says whether it drew anything. An element is rotated, so an icon and a
+	// symbol drawn in its place are drawn through the same path as a picture.
+	fn draw_element_image(ctx &gg.Context, el &Element, x f64, y f64, width f64, height f64,
+		rotation f64) bool {
+		if el.image_path.starts_with('symbol:') || el.image_path.starts_with('icon:') {
+			if rotation != 0.0 {
+				// A rotated glyph would need the rotation the picture path
+				// applies, and a rotation about the centre of a box holding one
+				// character is of no use to a reader of this code.
+				return false
+			}
+			return draw_icon_glyph(ctx, el.image_path, x, y, width, height,
+				el.text_style)
+		}
+		return draw_cached_image(ctx, el.image_path, x, y, width, height, rotation)
 	}
 
 	// SF Symbols are used as native AppKit button images. Other custom-rendered
@@ -2702,14 +2749,24 @@ fn page_focused_text_area(direction int) {
 		if el.hidden {
 			return
 		}
-		if el.kind == .image
-			|| (el.kind == .button && el.image_path.trim_space().len > 0
-			&& !el.image_path.starts_with('symbol:')) {
+		// A `symbol:` or an `icon:` is drawn as text in a font rather than read
+		// as a file, so there is nothing to cache and nothing to complain about
+		// when the file turns out not to exist.
+		if !is_font_backed_image_path(el.image_path)
+			&& (el.kind == .image
+			|| (el.kind == .button && el.image_path.trim_space().len > 0)) {
 			cache_image(el.image_path)
 		}
 		for child in el.children {
 			preload_images(child)
 		}
+	}
+
+	// is_font_backed_image_path says whether an `image_path` names a glyph
+	// rather than a picture. Those are drawn by the font, so the image cache has
+	// nothing to hold and the file loader has nothing to open.
+	fn is_font_backed_image_path(image_path string) bool {
+		return image_path.starts_with('symbol:') || image_path.starts_with('icon:')
 	}
 
 	fn cache_image(path string) bool {
@@ -2893,6 +2950,13 @@ fn page_focused_text_area(direction int) {
 		if os.is_file(family) {
 			path = family
 		} else {
+			// A font shipped beside a binary is not installed on the machine
+			// running it, so the system index below would never find it. The
+			// registry answers for the faces ui2 knows by name, and fontstash
+			// loads the file it hands back.
+			path = icon_font_file_for_family(family)
+		}
+		if path.len == 0 {
 			if !g_font_indexed {
 				mut dirs := font_bundle_dirs()
 				dirs << font_system_dirs()
