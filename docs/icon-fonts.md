@@ -30,6 +30,8 @@ a name drawn in an icon font would come out as one empty box per letter, because
 an icon font carries no letters. A name meant for a screen reader wants an
 accessibility field, and an element has none to put it in.
 
+![The icon fonts example: a row of named icons, and buttons carrying one beside their title](images/iconfonts.png)
+
 ## What ships
 
 The Material Icons face in `assets/fonts/MaterialIcons-Regular.ttf` and its
