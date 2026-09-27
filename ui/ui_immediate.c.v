@@ -2599,6 +2599,23 @@ fn page_focused_text_area(direction int) {
 			})
 			return
 		}
+		if image_path.starts_with('icon:') {
+			// An icon named rather than drawn as a file: `icon:material:home`.
+			// The glyph is drawn as text in the icon font, which is what an
+			// icon font is, and the size follows the box the way a symbol does
+			// so the two sit alike in the same button.
+			if ref := parse_icon_image_path(image_path) {
+				glyph := icon_name(ref.alias, ref.name)
+				icon := icon_style(ref.alias, ref.name, style)
+				if glyph.len > 0 && icon.font_family.len > 0 {
+					draw_text_centered(ctx, glyph, x, y, width, height, TextStyle{
+						...icon
+						size: math.max(math.min(width, height) * 0.75, 8.0)
+					})
+					return
+				}
+			}
+		}
 		if !draw_cached_image(ctx, image_path, x, y, width, height, 0) {
 			draw_outline(ctx, x, y, width, height, 0x94a3b8, 2)
 		}
@@ -2893,6 +2910,13 @@ fn page_focused_text_area(direction int) {
 		if os.is_file(family) {
 			path = family
 		} else {
+			// A font shipped beside a binary is not installed on the machine
+			// running it, so the system index below would never find it. The
+			// registry answers for the faces ui2 knows by name, and fontstash
+			// loads the file it hands back.
+			path = icon_font_file_for_family(family)
+		}
+		if path.len == 0 {
 			if !g_font_indexed {
 				mut dirs := font_bundle_dirs()
 				dirs << font_system_dirs()

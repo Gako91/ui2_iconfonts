@@ -165,21 +165,8 @@ fn parse_font_metrics(data []u8) !FontMetrics {
 	if tag != 'OTTO' && tag != 'true' && font_u32(data, base) != 0x00010000 {
 		return error('not a TrueType or OpenType font')
 	}
-	num_tables := font_u16(data, base + 4)
-	mut head := 0
-	mut hhea := 0
-	for i in 0 .. num_tables {
-		record := base + 12 + i * 16
-		match font_tag(data, record) {
-			'head' {
-				head = font_u32(data, record + 8)
-			}
-			'hhea' {
-				hhea = font_u32(data, record + 8)
-			}
-			else {}
-		}
-	}
+	head, _ := font_find_table(data, 'head')
+	hhea, _ := font_find_table(data, 'hhea')
 	if head == 0 || hhea == 0 {
 		return error('font is missing its head or hhea table')
 	}
@@ -197,6 +184,115 @@ fn parse_font_metrics(data []u8) !FontMetrics {
 // font_file_metrics reads the metrics of the font stored at `path`.
 fn font_file_metrics(path string) !FontMetrics {
 	return parse_font_metrics(os.read_bytes(path)!)!
+}
+
+// font_find_table returns the offset of a table in the directory, or 0 when the
+// font does not carry it. Collections are read the same way `parse_font_metrics`
+// reads them, so both look at the first font of a `.ttc`.
+fn font_find_table(data []u8, wanted string) (int, int) {
+	base := if font_tag(data, 0) == 'ttcf' { font_u32(data, 12) } else { 0 }
+	num_tables := font_u16(data, base + 4)
+	for i in 0 .. num_tables {
+		record := base + 12 + i * 16
+		if font_tag(data, record) == wanted {
+			return font_u32(data, record + 8), font_u32(data, record + 12)
+		}
+	}
+	return 0, 0
+}
+
+// font_name_record is one entry of the `name` table: what the string is called
+// (name_id), and where it sits in the table (offset and length). The platform
+// and language ids are ignored because the reader prefers the Windows record
+// and a name table always carries one English entry for a shipped family.
+struct FontNameRecord {
+	name_id int
+	offset  int
+	span    int
+}
+
+// parse_font_family reads the family name a font file gives itself. AppKit,
+// Win32 and fontstash all name a face by the string inside the file rather than
+// by the file's name, so a bundled icon font can only be asked for by what it
+// calls itself.
+//
+// The typographic family (name id 16) is preferred over the legacy one (id 1):
+// a family with a bold sibling stores its shared name in 16 and appends the
+// weight in 1, which is what the weight-suffixed file lookup in
+// `font_variant_keys` is already written to strip.
+fn parse_font_family(data []u8) !string {
+	table, span := font_find_table(data, 'name')
+	if table == 0 || span <= 0 {
+		return error('font is missing its name table')
+	}
+	count := font_u16(data, table + 2)
+	storage := table + font_u16(data, table + 4)
+	mut records := []FontNameRecord{}
+	for i in 0 .. count {
+		record := table + 6 + i * 12
+		if record + 12 > table + span {
+			break
+		}
+		// Platform 3 is Windows and stores UTF-16BE; platform 1 is the original
+		// Macintosh encoding, which is not UTF-8 and not worth decoding here.
+		if font_u16(data, record) != 3 {
+			continue
+		}
+		name_id := font_u16(data, record + 6)
+		if name_id != 1 && name_id != 16 {
+			continue
+		}
+		records << FontNameRecord{
+			name_id: name_id
+			offset:  storage + font_u16(data, record + 10)
+			span:    font_u16(data, record + 8)
+		}
+	}
+	for wanted in [16, 1] {
+		for record in records {
+			if record.name_id != wanted {
+				continue
+			}
+			name := font_utf16be(data, record.offset, record.span)
+			if name.len > 0 {
+				return name
+			}
+		}
+	}
+	return error('font has no family name')
+}
+
+// font_utf16be decodes the big-endian UTF-16 an Apple and Microsoft name record
+// stores its text in, stopping at the first NUL: a record's byte count covers
+// the whole of it, and the string is terminated inside.
+fn font_utf16be(data []u8, offset int, byte_count int) string {
+	if offset < 0 || byte_count < 2 {
+		return ''
+	}
+	mut runes := []rune{}
+	mut i := 0
+	for i + 2 <= byte_count {
+		unit := font_u16(data, offset + i)
+		if unit == 0 {
+			break
+		}
+		if unit >= 0xd800 && unit < 0xdc00 && i + 4 <= byte_count {
+			low := font_u16(data, offset + i + 2)
+			if low >= 0xdc00 && low < 0xe000 {
+				runes << rune(0x10000 + (unit - 0xd800) * 0x400 + (low - 0xdc00))
+				i += 4
+				continue
+			}
+		}
+		runes << rune(unit)
+		i += 2
+	}
+	return runes.string()
+}
+
+// font_file_family reads the family name of the font stored at `path`.
+fn font_file_family(path string) !string {
+	return parse_font_family(os.read_bytes(path)!)!
 }
 
 // font_key normalizes a family or file name down to letters and digits, so

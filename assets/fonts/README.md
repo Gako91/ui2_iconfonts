@@ -22,7 +22,9 @@ such as `Consolas` or the generic `monospace`, falls back to.
 `MaterialIcons-Regular.ttf` supplies portable equivalents for platform icon
 names such as SF Symbols on a custom-rendered desktop. It is also at the front
 of the fallback chain so its private-use glyphs can be drawn without depending
-on a machine-installed icon font.
+on a machine-installed icon font, and it is the face `ui2.icon_label` and the
+VML `icon` attribute draw from: its 2234 names are in `ui/icons_material.v`,
+written by `tools/icond.v`. See [../../docs/icon-fonts.md](../../docs/icon-fonts.md).
 
 `NotoSansSymbols2-Regular.ttf` is not drawn with directly; it follows Material
 Icons in the fallback chain and is the first general-purpose symbol face

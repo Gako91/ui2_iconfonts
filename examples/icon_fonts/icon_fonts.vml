@@ -1,0 +1,112 @@
+Screen {
+    id: root
+    background: #F8FAFC
+
+    Label {
+        text: "Icon fonts"
+        x: 24 y: 20 width: 400 height: 28
+        color: #0F172A font_size: 20 bold: true
+    }
+
+    Label {
+        text: "Every icon below is a name looked up in the bundled Material Icons face, not a character typed by hand."
+        x: 24 y: 50 width: root.width - 48 height: 20
+        color: #64748B font_size: 12
+    }
+
+    TextField {
+        id: query
+        text: app.query
+        placeholder: "an icon name, e.g. home"
+        submit_id: "lookup"
+        x: 24 y: 80 width: 280 height: 34
+        background: #FFFFFF border_color: #CBD5E1 border_width: 1
+        color: #0F172A font_size: 14
+    }
+
+    // The name the field holds, drawn. `icon` is the name; `icon_font` is the
+    // registered font it is looked up in, and defaults to the bundled face.
+    Label {
+        id: looked_up
+        icon: app.lookup_icon
+        text: app.query
+        x: 320 y: 76 width: 44 height: 44
+        color: #1D4ED8 font_size: 28
+        vertical_align: center
+    }
+
+    Label {
+        id: status
+        text: app.status
+        x: 376 y: 88 width: root.width - 400 height: 24
+        color: app.found ? #15803D : #B91C1C font_size: 13
+    }
+
+    Label {
+        text: "A name per icon"
+        x: 24 y: 134 width: 300 height: 22
+        color: #0F172A font_size: 14 bold: true
+    }
+
+    // Sixteen labels, each drawing one glyph, laid out by hand because a row of
+    // fixed-width frames is what an icon grid is.
+    Label { icon: "home"           x: 24  y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "search"         x: 72  y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "settings"       x: 120 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "favorite"       x: 168 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "delete"         x: 216 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "add"            x: 264 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "edit"           x: 312 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "person"         x: 360 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "mail"           x: 408 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "star"           x: 456 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "shopping-cart"  x: 504 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "info"           x: 552 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "warning"        x: 600 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "cloud"          x: 648 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "lock"           x: 696 y: 162 width: 40 height: 40 color: #334155 font_size: 22 }
+    Label { icon: "thumb-up"       x: 24  y: 208 width: 40 height: 40 color: #334155 font_size: 22 }
+
+    Label {
+        text: "An icon as a button image"
+        x: 24 y: 258 width: 300 height: 22
+        color: #0F172A font_size: 14 bold: true
+    }
+
+    // A button with an `icon` carries it the way a button with an image does,
+    // which is the form the native backends draw with the platform's own glyph.
+    Button { id: save       icon: "save"       text: "Save"   x: 24  y: 286 width: 120 height: 36 background: #F1F5F9 border_color: #CBD5E1 border_width: 1 color: #0F172A font_size: 13 }
+    Button { id: delete     icon: "delete"     text: "Delete" x: 156 y: 286 width: 120 height: 36 background: #F1F5F9 border_color: #CBD5E1 border_width: 1 color: #0F172A font_size: 13 }
+    Button { id: share      icon: "share"      text: "Share"  x: 288 y: 286 width: 120 height: 36 background: #F1F5F9 border_color: #CBD5E1 border_width: 1 color: #0F172A font_size: 13 }
+    Button { id: print      icon: "print"      text: "Print"  x: 420 y: 286 width: 120 height: 36 background: #F1F5F9 border_color: #CBD5E1 border_width: 1 color: #0F172A font_size: 13 }
+    Button { id: cloud_done icon: "cloud-done" text: "Upload" x: 552 y: 286 width: 120 height: 36 background: #F1F5F9 border_color: #CBD5E1 border_width: 1 color: #0F172A font_size: 13 }
+
+    Label {
+        text: "One more, from another face"
+        x: 24 y: 340 width: 300 height: 22
+        color: #0F172A font_size: 14 bold: true
+    }
+
+    // `icon_font` names the registered font, so the same document can ask a
+    // second face the same question. A name the second face does not carry
+    // draws nothing rather than a glyph from the wrong font.
+    Label { icon: "chevron-left" icon_font: "material" x: 24 y: 368 width: 40 height: 40 color: #0F766E font_size: 22 }
+
+    Label {
+        id: picked
+        text: "Picked: ${app.picked}"
+        x: 80 y: 378 width: 300 height: 24
+        color: #0F766E font_size: 13
+    }
+
+    Label {
+        id: pick_star   icon: "star"    on_tap: "pick:star"    clickable: true x: 320 y: 366 width: 40 height: 40 color: #0F766E font_size: 22 }
+    Label { id: pick_heart icon: "favorite" on_tap: "pick:favorite" clickable: true x: 368 y: 366 width: 40 height: 40 color: #0F766E font_size: 22 }
+    Label { id: pick_home  icon: "home"   on_tap: "pick:home"    clickable: true x: 416 y: 366 width: 40 height: 40 color: #0F766E font_size: 22 }
+
+    Label {
+        text: "The table is ui/icons_material.v, written by tools/icond.v from the list the Material Icons package ships."
+        x: 24 y: 440 width: root.width - 48 height: 20
+        color: #94A3B8 font_size: 11
+    }
+}
